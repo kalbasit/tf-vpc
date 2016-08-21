@@ -6,6 +6,10 @@ resource "aws_vpc" "mod" {
   tags {
     Name = "${var.name}"
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # NAT Gateway
@@ -16,16 +20,28 @@ resource "aws_internet_gateway" "internet_gateway" {
   tags {
     Name = "${var.name}"
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_eip" "gw_eip" {
   vpc = true
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_nat_gateway" "nat_gateway" {
   allocation_id = "${aws_eip.gw_eip.id}"
   subnet_id     = "${aws_subnet.public.0.id}"
   depends_on    = ["aws_internet_gateway.internet_gateway"]
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # Public subnets
@@ -41,6 +57,10 @@ resource "aws_subnet" "public" {
   }
 
   map_public_ip_on_launch = true
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # Routing table for public subnets
@@ -56,12 +76,20 @@ resource "aws_route_table" "public" {
   tags {
     Name = "${var.name}-public"
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_route_table_association" "public" {
   subnet_id      = "${element(aws_subnet.public.*.id, count.index)}"
   route_table_id = "${aws_route_table.public.id}"
   count          = "${length(var.public_subnets)}"
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # Private subsets
@@ -74,6 +102,10 @@ resource "aws_subnet" "private" {
 
   tags {
     Name = "${var.name}-private"
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
@@ -90,10 +122,18 @@ resource "aws_route_table" "private" {
   tags {
     Name = "${var.name}-private"
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_route_table_association" "private" {
   subnet_id      = "${element(aws_subnet.private.*.id, count.index)}"
   route_table_id = "${aws_route_table.private.id}"
   count          = "${length(var.azs)}"
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
